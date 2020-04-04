@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,13 +79,13 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 	private int backgroundProcessorDelay;
 
 	/**
-	 * Create a new {@link TomcatServletWebServerFactory} instance.
+	 * Create a new {@link TomcatReactiveWebServerFactory} instance.
 	 */
 	public TomcatReactiveWebServerFactory() {
 	}
 
 	/**
-	 * Create a new {@link TomcatServletWebServerFactory} that listens for requests using
+	 * Create a new {@link TomcatReactiveWebServerFactory} that listens for requests using
 	 * the specified port.
 	 * @param port the port to listen on
 	 */
@@ -112,7 +112,7 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 		configureEngine(tomcat.getEngine());
 		TomcatHttpHandlerAdapter servlet = new TomcatHttpHandlerAdapter(httpHandler);
 		prepareContext(tomcat.getHost(), servlet);
-		return new TomcatWebServer(tomcat, getPort() >= 0);
+		return getTomcatWebServer(tomcat);
 	}
 
 	private void configureEngine(Engine engine) {
