@@ -265,9 +265,12 @@ public class SpringApplication {
 		this.resourceLoader = resourceLoader;
 		Assert.notNull(primarySources, "PrimarySources must not be null");
 		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
+		// 默认 SERVLET
 		this.webApplicationType = WebApplicationType.deduceFromClasspath();
+		// 从spring.factories 获得默认配置的实现类
 		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
 		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+		//获得默认的main方法所在的类 根据调用栈来推断
 		this.mainApplicationClass = deduceMainApplicationClass();
 	}
 
@@ -297,15 +300,21 @@ public class SpringApplication {
 		stopWatch.start();
 		ConfigurableApplicationContext context = null;
 		Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList<>();
+		//  //配置headless,在没有显示器,鼠标,键盘的情况下,仍然可以调用显示,输入输出的方法
 		configureHeadlessProperty();
+		// 此时可以在自己项目中 spring.factories 文件实现自定义的 SpringApplicationRunListener
 		SpringApplicationRunListeners listeners = getRunListeners(args);
 		listeners.starting();
 		try {
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
+			// 方法里调用了 listeners.environmentPrepared(environment);
 			ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
+			// spring.beaninfo.ignore 读取配置设置是否忽略
 			configureIgnoreBeanInfo(environment);
 			Banner printedBanner = printBanner(environment);
+			// 创建上下文 默认 AnnotationConfigServletWebServerApplicationContext
 			context = createApplicationContext();
+			// 注册 失败分析器 FailureAnalyzers
 			exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
 					new Class[] { ConfigurableApplicationContext.class }, context);
 			prepareContext(context, environment, listeners, applicationArguments, printedBanner);
@@ -316,6 +325,8 @@ public class SpringApplication {
 				new StartupInfoLogger(this.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);
 			}
 			listeners.started(context);
+			// 最后执行 ApplicationRunner 两种实现类 ApplicationRunner CommandLineRunner
+			// 可以通过 @Bean注入
 			callRunners(context, applicationArguments);
 		}
 		catch (Throwable ex) {
@@ -407,7 +418,7 @@ public class SpringApplication {
 	private SpringApplicationRunListeners getRunListeners(String[] args) {
 		Class<?>[] types = new Class<?>[] { SpringApplication.class, String[].class };
 		return new SpringApplicationRunListeners(logger,
-				getSpringFactoriesInstances(SpringApplicationRunListener.class, types, this, args));
+				getSpringFactoriesInstances(SpringApplicationRunListener.class, types, this, args));//EventPublishingRunListener
 	}
 
 	private <T> Collection<T> getSpringFactoriesInstances(Class<T> type) {
@@ -416,7 +427,8 @@ public class SpringApplication {
 
 	private <T> Collection<T> getSpringFactoriesInstances(Class<T> type, Class<?>[] parameterTypes, Object... args) {
 		ClassLoader classLoader = getClassLoader();
-		// Use names and ensure unique to protect against duplicates
+		// Use names and ensure unique to protect against duplicates 初始化加载META-INF/spring.factories
+		//
 		Set<String> names = new LinkedHashSet<>(SpringFactoriesLoader.loadFactoryNames(type, classLoader));
 		List<T> instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);
 		AnnotationAwareOrderComparator.sort(instances);
